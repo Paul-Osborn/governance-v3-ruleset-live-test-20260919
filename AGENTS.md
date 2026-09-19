@@ -81,3 +81,5 @@ do not add filler or make a commit solely for the log.
 
 Details, recovery procedures, the control matrix, and platform notes live in `REPO_RULES.md` and
 `docs/`. Governance generation: `.governance-version`.
+
+Ruleset live-test phase: initial-bot-author
