@@ -1,0 +1,44 @@
+name: Ruleset Test Driver
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Evidence phase written to the protected test file
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Push bot-authored protected-file change
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PHASE: ${{ inputs.phase }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git fetch origin ruleset-live-test; then
+            git switch -C ruleset-live-test FETCH_HEAD
+          else
+            git switch -c ruleset-live-test
+          fi
+          printf '\nRuleset live-test phase: %s\n' "$PHASE" >> AGENTS.md
+          git add AGENTS.md
+          git commit -m "test: record ruleset phase $PHASE"
+          git push origin HEAD:ruleset-live-test
+          if ! gh pr view ruleset-live-test --json number >/dev/null 2>&1; then
+            gh pr create --base main --head ruleset-live-test \
+              --title 'test: exercise governance v3 ruleset' \
+              --body 'Disposable evidence PR for code-owner, last-push, and exact-HEAD status semantics.'
+          fi
